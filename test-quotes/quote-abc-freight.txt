@@ -1,0 +1,28 @@
+RAPID TRANSPORT INC.
+Quote Reference: RT-20260108-A
+Date: January 8, 2026
+
+Customer: Your Company
+Representative: John Smith
+Email: john@rapidtransport.com
+Phone: (555) 456-7890
+
+FREIGHT QUOTATION:
+
+Description                         Units       Price/Unit    Total
+--------------------------------------------------------------------
+Standard Freight (500 lbs)          500         $0.52/lb      $260.00
+Expedited Processing                1           $45.00        $45.00
+Lift Gate Service                   1           $30.00        $30.00
+Residential Delivery                1           $25.00        $25.00
+--------------------------------------------------------------------
+
+SUBTOTAL:                                                     $360.00
+FUEL SURCHARGE (12%):                                         $43.20
+--------------------------------------------------------------------
+TOTAL DUE:                                                    $403.20
+
+Payment Terms: Due on receipt
+Quote expires: January 22, 2026
+
+Rapid Transport Inc. - Fast & Reliable
