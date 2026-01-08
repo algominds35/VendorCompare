@@ -64,7 +64,8 @@ function App() {
       const formData = new FormData()
       files.forEach(f => formData.append('files', f.file))
 
-      const response = await fetch('http://localhost:3001/upload', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+      const response = await fetch(`${apiUrl}/upload`, {
         method: 'POST',
         body: formData,
       })
