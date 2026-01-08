@@ -219,9 +219,54 @@ function App() {
                 ✕ Close
               </button>
             </div>
-            <div className="prose max-w-none">
-              <div className="whitespace-pre-wrap text-gray-800 leading-relaxed">
-                {results.comparison}
+            
+            {/* Best Deal */}
+            {results.bestDeal && (
+              <div className="mb-6 p-6 bg-green-50 border-2 border-green-200 rounded-xl">
+                <h3 className="text-xl font-bold text-green-800 mb-2">🏆 Best Deal</h3>
+                <p className="text-2xl font-bold text-green-600">{results.bestDeal.vendor}</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">${results.bestDeal.total.toFixed(2)}</p>
+                {results.bestDeal.savings > 0 && (
+                  <p className="text-green-600 mt-2">💰 Save ${results.bestDeal.savings.toFixed(2)} compared to highest quote</p>
+                )}
+              </div>
+            )}
+
+            {/* Price Comparison */}
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <p className="text-sm text-gray-600">Lowest Price</p>
+                <p className="text-2xl font-bold text-blue-600">${results.comparison.lowestPrice.toFixed(2)}</p>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">Average Price</p>
+                <p className="text-2xl font-bold text-gray-600">${results.comparison.averagePrice.toFixed(2)}</p>
+              </div>
+              <div className="p-4 bg-red-50 rounded-lg">
+                <p className="text-sm text-gray-600">Highest Price</p>
+                <p className="text-2xl font-bold text-red-600">${results.comparison.highestPrice.toFixed(2)}</p>
+              </div>
+            </div>
+
+            {/* All Quotes */}
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 mb-3">All Quotes:</h3>
+              <div className="space-y-3">
+                {results.quotes.map((quote, idx) => (
+                  <div key={idx} className={`p-4 rounded-lg border-2 ${quote.error ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200'}`}>
+                    {quote.error ? (
+                      <p className="text-red-600">❌ Error: {quote.error}</p>
+                    ) : (
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="font-bold text-gray-900">{quote.vendor}</p>
+                          <p className="text-sm text-gray-600">{quote.items?.length || 0} items</p>
+                        </div>
+                        <p className="text-2xl font-bold text-gray-900">${quote.total.toFixed(2)}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
