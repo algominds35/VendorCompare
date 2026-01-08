@@ -4,6 +4,7 @@ function App() {
   const [files, setFiles] = useState([])
   const [isDragging, setIsDragging] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [results, setResults] = useState(null)
   const fileInputRef = useRef(null)
 
   const handleDragEnter = (e) => {
@@ -73,13 +74,12 @@ function App() {
       const data = await response.json()
 
       if (data.success) {
-        alert('✓ Quotes compared successfully!')
-        console.log('Comparison results:', data.data)
+        setResults(data.data)
       } else {
         throw new Error(data.message)
       }
     } catch (error) {
-      alert('⚠️ Backend not connected yet.\n\nUpload works, but comparison needs backend server.')
+      alert('⚠️ Error: ' + error.message)
     } finally {
       setIsProcessing(false)
     }
@@ -204,6 +204,26 @@ function App() {
             {files.length < 2 && (
               <p className="text-sm text-gray-500 mt-3">Need at least 2 quotes</p>
             )}
+          </div>
+        )}
+
+        {/* Results */}
+        {results && (
+          <div className="mt-12 bg-white rounded-2xl p-8 shadow-lg">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">📊 Comparison Results</h2>
+              <button 
+                onClick={() => setResults(null)}
+                className="text-sm text-gray-600 hover:text-gray-800"
+              >
+                ✕ Close
+              </button>
+            </div>
+            <div className="prose max-w-none">
+              <div className="whitespace-pre-wrap text-gray-800 leading-relaxed">
+                {results.comparison}
+              </div>
+            </div>
           </div>
         )}
 
