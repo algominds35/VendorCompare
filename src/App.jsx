@@ -152,6 +152,57 @@ function App() {
     XLSX.writeFile(workbook, filename)
   }
 
+  const handleEmailSubmit = async (e) => {
+    e.preventDefault()
+    if (!email || !email.includes('@')) {
+      setError('Please enter a valid email address')
+      return
+    }
+
+    setIsSubmittingEmail(true)
+    setError(null)
+
+    try {
+      if (supabase) {
+        // Save to Supabase
+        const { error: supabaseError } = await supabase
+          .from('emails')
+          .insert([
+            { 
+              email: email,
+              created_at: new Date().toISOString()
+            }
+          ])
+
+        if (supabaseError) {
+          console.error('Supabase error:', supabaseError)
+          // Fall through to localStorage backup
+        } else {
+          setEmailSubmitted(true)
+          setEmail('')
+          setIsSubmittingEmail(false)
+          return
+        }
+      }
+
+      // Fallback: Save to localStorage if Supabase not configured
+      const savedEmails = JSON.parse(localStorage.getItem('collected_emails') || '[]')
+      savedEmails.push({
+        email: email,
+        timestamp: new Date().toISOString()
+      })
+      localStorage.setItem('collected_emails', JSON.stringify(savedEmails))
+      
+      setEmailSubmitted(true)
+      setEmail('')
+    } catch (err) {
+      console.error('Error saving email:', err)
+      setError('Failed to save email. Please try again.')
+    } finally {
+      setIsSubmittingEmail(false)
+    }
+  }
+
   const handleCompare = async () => {
     if (files.length < 1) {
       setError('Please upload at least one file')
