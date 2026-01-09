@@ -72,7 +72,7 @@ function App() {
 
   const handleCompare = async () => {
     if (files.length < 1) {
-      setError('Please upload at least one PDF file')
+      setError('Please upload at least one file')
       return
     }
     
