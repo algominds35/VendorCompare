@@ -76,6 +76,78 @@ function App() {
     setResults(null)
   }
 
+  const exportToExcel = () => {
+    if (!results) return
+
+    const workbook = XLSX.utils.book_new()
+
+    // Sheet 1: Summary
+    const summaryData = [
+      ['Vendor Quote Comparison Summary'],
+      [],
+      ['Best Deal', results.bestDeal?.vendorName || 'N/A', `$${results.bestDeal?.totalPrice?.toLocaleString() || 'N/A'}`],
+      [],
+      ['Statistics'],
+      ['Lowest Price', `$${results.lowestPrice?.toLocaleString() || 'N/A'}`],
+      ['Average Price', `$${results.averagePrice?.toLocaleString() || 'N/A'}`],
+      ['Highest Price', `$${results.highestPrice?.toLocaleString() || 'N/A'}`],
+      ['Total Quotes', results.quotes?.length || 0],
+      ['Savings (vs Highest)', `$${((results.highestPrice || 0) - (results.lowestPrice || 0)).toLocaleString()}`],
+    ]
+    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData)
+    XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary')
+
+    // Sheet 2: All Quotes Comparison
+    const quotesData = [
+      ['Vendor', 'Total Price', 'Items Count', 'Best Deal', 'Savings vs Highest']
+    ]
+    results.quotes?.forEach(quote => {
+      quotesData.push([
+        quote.vendorName || 'Unknown',
+        quote.totalPrice || 0,
+        quote.items?.length || 0,
+        quote.totalPrice === results.lowestPrice ? 'Yes' : 'No',
+        `$${((results.highestPrice || 0) - (quote.totalPrice || 0)).toLocaleString()}`
+      ])
+    })
+    const quotesSheet = XLSX.utils.aoa_to_sheet(quotesData)
+    XLSX.utils.book_append_sheet(workbook, quotesSheet, 'All Quotes')
+
+    // Sheet 3+: Individual Quote Details
+    results.quotes?.forEach((quote, index) => {
+      const quoteData = [
+        [`Quote ${index + 1}: ${quote.vendorName || 'Unknown'}`],
+        [`Total Price: $${quote.totalPrice?.toLocaleString() || 'N/A'}`],
+        [],
+        ['Item', 'Description', 'Quantity', 'Unit Price', 'Total Price']
+      ]
+      
+      if (quote.items && quote.items.length > 0) {
+        quote.items.forEach(item => {
+          quoteData.push([
+            item.description || item.name || 'Item',
+            item.description || item.name || '',
+            item.quantity || 1,
+            item.price || item.unitPrice || 0,
+            (item.price || item.unitPrice || 0) * (item.quantity || 1)
+          ])
+        })
+      } else {
+        quoteData.push(['No items found'])
+      }
+
+      const quoteSheet = XLSX.utils.aoa_to_sheet(quoteData)
+      XLSX.utils.book_append_sheet(workbook, quoteSheet, `Quote ${index + 1}`)
+    })
+
+    // Generate filename with timestamp
+    const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+    const filename = `Quote_Comparison_${timestamp}.xlsx`
+
+    // Write and download
+    XLSX.writeFile(workbook, filename)
+  }
+
   const handleCompare = async () => {
     if (files.length < 1) {
       setError('Please upload at least one file')
