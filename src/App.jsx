@@ -9,7 +9,12 @@ function App() {
   const fileInputRef = useRef(null)
 
   // Get API URL from environment variable
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+  let apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+  
+  // Ensure URL has protocol (https:// or http://)
+  if (apiUrl && !apiUrl.startsWith('http://') && !apiUrl.startsWith('https://')) {
+    apiUrl = `https://${apiUrl}`
+  }
 
   const handleDragEnter = (e) => {
     e.preventDefault()
