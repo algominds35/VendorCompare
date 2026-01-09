@@ -1,5 +1,6 @@
 ﻿import { useState, useRef } from 'react'
 import * as XLSX from 'xlsx'
+import { supabase } from './supabase'
 
 function App() {
   const [files, setFiles] = useState([])
@@ -7,6 +8,9 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [results, setResults] = useState(null)
   const [error, setError] = useState(null)
+  const [email, setEmail] = useState('')
+  const [isSubmittingEmail, setIsSubmittingEmail] = useState(false)
+  const [emailSubmitted, setEmailSubmitted] = useState(false)
   const fileInputRef = useRef(null)
 
   // Get API URL from environment variable
@@ -448,6 +452,45 @@ function App() {
             </div>
           </div>
         )}
+
+        {/* Email Collection Form */}
+        <div className="mt-12 bg-white rounded-2xl p-6 shadow-md">
+          <div className="text-center">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              Get Updates & Early Access
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Be the first to know about new features and pricing plans
+            </p>
+            {emailSubmitted ? (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <p className="text-green-800 font-semibold">✅ Thank you! We'll be in touch soon.</p>
+              </div>
+            ) : (
+              <form onSubmit={handleEmailSubmit} className="max-w-md mx-auto flex gap-2">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+                <button
+                  type="submit"
+                  disabled={isSubmittingEmail}
+                  className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
+                    isSubmittingEmail
+                      ? 'bg-gray-400 cursor-not-allowed text-white'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white'
+                  }`}
+                >
+                  {isSubmittingEmail ? 'Submitting...' : 'Subscribe'}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )
