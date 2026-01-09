@@ -125,8 +125,19 @@ function App() {
       const resultData = data.data || data
       
       // Transform backend format to frontend format
+      const quotes = (resultData.quotes || []).map(quote => ({
+        ...quote,
+        vendorName: quote.vendor || quote.vendorName,
+        totalPrice: quote.total || quote.totalPrice,
+        items: (quote.items || []).map(item => ({
+          ...item,
+          description: item.description || item.name,
+          price: item.price || item.unitPrice || item.total
+        }))
+      }))
+      
       setResults({
-        quotes: resultData.quotes || [],
+        quotes: quotes,
         lowestPrice: resultData.comparison?.lowestPrice || resultData.lowestPrice,
         highestPrice: resultData.comparison?.highestPrice || resultData.highestPrice,
         averagePrice: resultData.comparison?.averagePrice || resultData.averagePrice,
