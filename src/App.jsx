@@ -117,11 +117,24 @@ function App() {
 
       const data = await response.json()
 
-      if (!response.ok) {
+      if (!response.ok || !data.success) {
         throw new Error(data.message || `Server error: ${response.status}`)
       }
 
-      setResults(data)
+      // Backend returns data nested under 'data' property
+      const resultData = data.data || data
+      
+      // Transform backend format to frontend format
+      setResults({
+        quotes: resultData.quotes || [],
+        lowestPrice: resultData.comparison?.lowestPrice || resultData.lowestPrice,
+        highestPrice: resultData.comparison?.highestPrice || resultData.highestPrice,
+        averagePrice: resultData.comparison?.averagePrice || resultData.averagePrice,
+        bestDeal: resultData.bestDeal ? {
+          vendorName: resultData.bestDeal.vendor,
+          totalPrice: resultData.bestDeal.total
+        } : null
+      })
     } catch (err) {
       console.error('❌ Error:', err)
       setError(err.message || 'Failed to compare quotes. Please check your connection.')
