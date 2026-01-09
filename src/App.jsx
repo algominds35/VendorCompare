@@ -28,24 +28,12 @@ function App() {
   const handleDrop = (e) => {
     e.preventDefault()
     setIsDragging(false)
-    const droppedFiles = Array.from(e.dataTransfer.files).filter(
-      file => file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
-    )
-    if (droppedFiles.length === 0 && e.dataTransfer.files.length > 0) {
-      setError('Please upload PDF files only')
-      return
-    }
+    const droppedFiles = Array.from(e.dataTransfer.files)
     addFiles(droppedFiles)
   }
 
   const handleFileSelect = (e) => {
-    const selectedFiles = Array.from(e.target.files).filter(
-      file => file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
-    )
-    if (selectedFiles.length === 0 && e.target.files.length > 0) {
-      setError('Please upload PDF files only')
-      return
-    }
+    const selectedFiles = Array.from(e.target.files)
     addFiles(selectedFiles)
     // Reset input so same file can be selected again
     e.target.value = ''
@@ -172,7 +160,7 @@ function App() {
             ref={fileInputRef}
             type="file"
             multiple
-            accept="application/pdf"
+            accept=".pdf,.xlsx,.xls,.csv,.png,.jpg,.jpeg,.txt"
             onChange={handleFileSelect}
             className="hidden"
           />
@@ -196,7 +184,7 @@ function App() {
               Choose Files
             </button>
 
-            <p className="text-sm text-gray-500 mt-4">PDF files only • Max 10 files</p>
+            <p className="text-sm text-gray-500 mt-4">PDF, Excel, CSV, Images, Text • Max 10 files</p>
           </div>
         </div>
 
