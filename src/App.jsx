@@ -29,34 +29,51 @@ function App() {
     e.preventDefault()
     setIsDragging(false)
     const droppedFiles = Array.from(e.dataTransfer.files).filter(
-      file => file.type === 'application/pdf'
+      file => file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
     )
+    if (droppedFiles.length === 0 && e.dataTransfer.files.length > 0) {
+      setError('Please upload PDF files only')
+      return
+    }
     addFiles(droppedFiles)
   }
 
   const handleFileSelect = (e) => {
     const selectedFiles = Array.from(e.target.files).filter(
-      file => file.type === 'application/pdf'
+      file => file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
     )
+    if (selectedFiles.length === 0 && e.target.files.length > 0) {
+      setError('Please upload PDF files only')
+      return
+    }
     addFiles(selectedFiles)
+    // Reset input so same file can be selected again
+    e.target.value = ''
   }
 
   const addFiles = (newFiles) => {
+    if (newFiles.length === 0) return
+    
     if (files.length + newFiles.length > 10) {
-      alert('Maximum 10 files')
+      setError('Maximum 10 files allowed')
       return
     }
 
-    const filesWithIds = newFiles.map(file => ({
-      id: Date.now() + Math.random(),
-      file: file,
-      name: file.name,
-      size: (file.size / 1024).toFixed(1) + ' KB'
-    }))
+    try {
+      const filesWithIds = newFiles.map(file => ({
+        id: Date.now() + Math.random(),
+        file: file,
+        name: file.name,
+        size: (file.size / 1024).toFixed(1) + ' KB'
+      }))
 
-    setFiles(prev => [...prev, ...filesWithIds])
-    setError(null)
-    setResults(null)
+      setFiles(prev => [...prev, ...filesWithIds])
+      setError(null)
+      setResults(null)
+    } catch (err) {
+      console.error('Error adding files:', err)
+      setError('Failed to add files. Please try again.')
+    }
   }
 
   const removeFile = (id) => {
