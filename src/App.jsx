@@ -84,16 +84,29 @@ function App() {
       const formData = new FormData()
       files.forEach(f => formData.append('files', f.file))
 
-      console.log('📤 POST to:', `${apiUrl}/upload`)
+      const uploadUrl = `${apiUrl}/upload`
+      console.log('📤 POST to:', uploadUrl)
+      console.log('🔗 API URL from env:', import.meta.env.VITE_API_URL)
+      console.log('📦 Files count:', files.length)
 
-      const response = await fetch(`${apiUrl}/upload`, {
+      const response = await fetch(uploadUrl, {
         method: 'POST',
         body: formData,
       })
 
+      console.log('📥 Response status:', response.status)
+      console.log('📥 Response URL:', response.url)
+
       const contentType = response.headers.get('content-type')
       if (!contentType || !contentType.includes('application/json')) {
         const text = await response.text()
+        console.error('❌ Non-JSON response:', text.substring(0, 500))
+        
+        // Check if it's a 404
+        if (response.status === 404) {
+          throw new Error(`Backend not found (404). Check that VITE_API_URL is set correctly in Vercel.\n\nCurrent API URL: ${apiUrl}\n\nMake sure it points to: https://vendorcompare-backend-production.up.railway.app`)
+        }
+        
         throw new Error(`Server error: ${response.status}\n${text.substring(0, 200)}`)
       }
 
