@@ -1,4 +1,5 @@
 ﻿import { useState, useRef } from 'react'
+import { Analytics } from '@vercel/analytics/react'
 import * as XLSX from 'xlsx'
 import { supabase } from './supabase'
 
@@ -284,6 +285,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <Analytics />
       {/* Header */}
       <div className="bg-white shadow-sm">
         <div className="max-w-5xl mx-auto px-6 py-6 flex items-center gap-4">
