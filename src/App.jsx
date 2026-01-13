@@ -1,5 +1,5 @@
-﻿import { useState, useRef } from 'react'
-import { Analytics } from '@vercel/analytics/react'
+﻿import { useState, useRef, useEffect } from 'react'
+import { Analytics, track } from '@vercel/analytics/react'
 import * as XLSX from 'xlsx'
 import { supabase } from './supabase'
 
@@ -40,11 +40,13 @@ function App() {
     e.preventDefault()
     setIsDragging(false)
     const droppedFiles = Array.from(e.dataTransfer.files)
+    track('file_dropped', { file_count: droppedFiles.length })
     addFiles(droppedFiles)
   }
 
   const handleFileSelect = (e) => {
     const selectedFiles = Array.from(e.target.files)
+    track('file_selected', { file_count: selectedFiles.length })
     addFiles(selectedFiles)
     // Reset input so same file can be selected again
     e.target.value = ''
@@ -55,6 +57,7 @@ function App() {
     
     if (files.length + newFiles.length > 10) {
       setError('Maximum 10 files allowed')
+      track('file_limit_reached', { current_count: files.length, attempted: newFiles.length })
       return
     }
 
@@ -67,22 +70,32 @@ function App() {
       }))
 
       setFiles(prev => [...prev, ...filesWithIds])
+      track('files_added', { 
+        file_count: newFiles.length, 
+        total_files: files.length + newFiles.length,
+        file_types: [...new Set(newFiles.map(f => f.name.split('.').pop()))].join(',')
+      })
       setError(null)
       setResults(null)
     } catch (err) {
       console.error('Error adding files:', err)
+      track('file_add_error', { error: err.message })
       setError('Failed to add files. Please try again.')
     }
   }
 
   const removeFile = (id) => {
     setFiles(prev => prev.filter(f => f.id !== id))
+    track('file_removed', { remaining_files: files.length - 1 })
     setError(null)
     setResults(null)
   }
 
   const exportToExcel = () => {
     if (!results) return
+
+    // Track Excel export in Analytics
+    track('excel_export', { quote_count: results.quotes?.length || 0 })
 
     const workbook = XLSX.utils.book_new()
 
@@ -164,9 +177,12 @@ function App() {
     setError(null)
 
     try {
+      // Track email submission in Analytics
+      track('email_submitted', { email_domain: email.split('@')[1] })
+
       if (supabase) {
         // Save to Supabase
-        const { error: supabaseError } = await supabase
+        const { data, error: supabaseError } = await supabase
           .from('emails')
           .insert([
             { 
@@ -174,16 +190,23 @@ function App() {
               created_at: new Date().toISOString()
             }
           ])
+          .select()
 
         if (supabaseError) {
-          console.error('Supabase error:', supabaseError)
+          console.error('❌ Supabase error:', supabaseError)
           // Fall through to localStorage backup
         } else {
+          console.log('✅ Email saved to Supabase:', data)
+          track('email_saved_supabase', { success: true })
           setEmailSubmitted(true)
           setEmail('')
           setIsSubmittingEmail(false)
           return
         }
+      } else {
+        console.warn('⚠️ Supabase not configured - using localStorage fallback')
+        console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL)
+        console.log('Supabase Key:', import.meta.env.VITE_SUPABASE_ANON_KEY ? 'Present' : 'Missing')
       }
 
       // Fallback: Save to localStorage if Supabase not configured
@@ -193,11 +216,14 @@ function App() {
         timestamp: new Date().toISOString()
       })
       localStorage.setItem('collected_emails', JSON.stringify(savedEmails))
+      console.log('✅ Email saved to localStorage (fallback)')
+      track('email_saved_localstorage', { success: true })
       
       setEmailSubmitted(true)
       setEmail('')
     } catch (err) {
-      console.error('Error saving email:', err)
+      console.error('❌ Error saving email:', err)
+      track('email_error', { error: err.message })
       setError('Failed to save email. Please try again.')
     } finally {
       setIsSubmittingEmail(false)
@@ -213,6 +239,9 @@ function App() {
     setIsProcessing(true)
     setError(null)
     setResults(null)
+    
+    // Track comparison started in Analytics
+    track('quote_compare_started', { file_count: files.length })
     
     try {
       const formData = new FormData()
@@ -265,7 +294,7 @@ function App() {
         }))
       }))
       
-      setResults({
+      const resultsData = {
         quotes: quotes,
         lowestPrice: resultData.comparison?.lowestPrice || resultData.lowestPrice,
         highestPrice: resultData.comparison?.highestPrice || resultData.highestPrice,
@@ -274,14 +303,94 @@ function App() {
           vendorName: resultData.bestDeal.vendor,
           totalPrice: resultData.bestDeal.total
         } : null
+      }
+      
+      setResults(resultsData)
+      
+      // Track successful comparison in Analytics
+      track('quote_compare_success', { 
+        quote_count: quotes.length,
+        lowest_price: resultsData.lowestPrice,
+        highest_price: resultsData.highestPrice
       })
+      
+      // Track when results are displayed
+      setTimeout(() => {
+        track('results_viewed', { 
+          quote_count: quotes.length,
+          has_best_deal: !!resultsData.bestDeal
+        })
+      }, 500)
     } catch (err) {
       console.error('❌ Error:', err)
       setError(err.message || 'Failed to compare quotes. Please check your connection.')
+      
+      // Track comparison error in Analytics
+      track('quote_compare_error', { error: err.message || 'Unknown error' })
     } finally {
       setIsProcessing(false)
     }
   }
+
+  // Track page views and user behavior on mount
+  useEffect(() => {
+    const startTime = Date.now()
+    track('page_view', { page: 'home' })
+
+    // Track scroll depth (only once per milestone)
+    let scrollMilestones = { 25: false, 50: false, 75: false, 100: false }
+    const handleScroll = () => {
+      const scrollPercent = Math.round(
+        ((window.scrollY + window.innerHeight) / document.documentElement.scrollHeight) * 100
+      )
+      
+      // Track milestones only once
+      if (scrollPercent >= 25 && !scrollMilestones[25]) {
+        scrollMilestones[25] = true
+        track('scroll_depth', { depth: 25 })
+      } else if (scrollPercent >= 50 && !scrollMilestones[50]) {
+        scrollMilestones[50] = true
+        track('scroll_depth', { depth: 50 })
+      } else if (scrollPercent >= 75 && !scrollMilestones[75]) {
+        scrollMilestones[75] = true
+        track('scroll_depth', { depth: 75 })
+      } else if (scrollPercent >= 100 && !scrollMilestones[100]) {
+        scrollMilestones[100] = true
+        track('scroll_depth', { depth: 100 })
+      }
+    }
+
+    // Track time on page milestones
+    const timeIntervals = [10, 30, 60, 120] // seconds
+    const timeTrackers = timeIntervals.map(seconds => {
+      return setTimeout(() => {
+        track('time_on_page', { seconds })
+      }, seconds * 1000)
+    })
+
+    // Track when user leaves
+    let hasTrackedExit = false
+    const handleBeforeUnload = () => {
+      if (!hasTrackedExit) {
+        hasTrackedExit = true
+        const timeSpent = Math.round((Date.now() - startTime) / 1000)
+        const maxScroll = Object.keys(scrollMilestones).filter(k => scrollMilestones[k]).pop() || 0
+        track('page_exit', { 
+          time_spent_seconds: timeSpent,
+          max_scroll: parseInt(maxScroll)
+        })
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    window.addEventListener('beforeunload', handleBeforeUnload)
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      timeTrackers.forEach(timer => clearTimeout(timer))
+    }
+  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -350,7 +459,10 @@ function App() {
             <p className="text-gray-600 mb-4">Drag files or click button below</p>
 
             <button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => {
+                track('upload_button_clicked', { method: 'button' })
+                fileInputRef.current?.click()
+              }}
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold shadow-lg transition-colors"
             >
               Choose Files
@@ -365,7 +477,12 @@ function App() {
           <div className="bg-white rounded-2xl p-6 shadow-md mb-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold text-gray-900">Files ({files.length}/10)</h3>
-              <button onClick={() => { setFiles([]); setResults(null); setError(null); }} className="text-sm text-red-600 hover:underline">
+              <button onClick={() => { 
+                track('clear_all_clicked', { file_count: files.length })
+                setFiles([])
+                setResults(null)
+                setError(null)
+              }} className="text-sm text-red-600 hover:underline">
                 Clear All
               </button>
             </div>
